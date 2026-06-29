@@ -1,2 +1,0 @@
-# teacher
-basic attendance app
