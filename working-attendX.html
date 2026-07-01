@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AttendX — Smart Attendance System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#07070f;font-family:'DM Sans',sans-serif;color:#e8eaf0;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:#07070f}
+::-webkit-scrollbar-thumb{background:#5b9bd5;border-radius:2px}
+input,button{font-family:inherit}
+input::placeholder{color:rgba(232,234,240,0.25)!important}
+a{text-decoration:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 24px rgba(91,155,213,0.35)}50%{box-shadow:0 0 48px rgba(91,155,213,0.7)}}
+@keyframes float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes neonBorder{0%,100%{box-shadow:0 0 14px rgba(91,155,213,0.28),0 0 0 1px rgba(91,155,213,0.18) inset}50%{box-shadow:0 0 30px rgba(78,205,196,0.5),0 0 0 1px rgba(78,205,196,0.32) inset}}
+@keyframes drift{0%,100%{transform:translate(0,0)}33%{transform:translate(18px,-14px)}66%{transform:translate(-14px,12px)}}
+@keyframes bgDrift1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(6vw,4vh) scale(1.15)}50%{transform:translate(2vw,8vh) scale(0.95)}75%{transform:translate(-5vw,2vh) scale(1.08)}}
+@keyframes bgDrift2{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(-6vw,-5vh) scale(1.1)}60%{transform:translate(-3vw,6vh) scale(0.92)}}
+@keyframes bgDrift3{0%,100%{transform:translate(-50%,-50%) translate(0,0)}40%{transform:translate(-50%,-50%) translate(5vw,-6vh)}80%{transform:translate(-50%,-50%) translate(-4vw,4vh)}}
+@keyframes gridMove{from{background-position:0 0,0 0}to{background-position:42px 42px,42px 42px}}
+@keyframes particleRise{0%{transform:translate(0,0);opacity:0}8%{opacity:0.85}92%{opacity:0.5}100%{transform:translate(var(--px,12px),-108vh);opacity:0}}
+.anim-fadeup{animation:fadeUp 0.6s ease both}
+.anim-fadein{animation:fadeIn 0.5s ease both}
+.card-hover{transition:transform 0.25s,border-color 0.25s,box-shadow 0.25s}
+.card-hover:hover{transform:translateY(-5px);border-color:rgba(91,155,213,0.45)!important;box-shadow:0 12px 36px rgba(91,155,213,0.16),0 0 24px rgba(78,205,196,0.12)!important}
+.grad-text-live{background-size:200% 200%;animation:gradientShift 5s ease infinite}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity 0.7s cubic-bezier(.2,.7,.3,1),transform 0.7s cubic-bezier(.2,.7,.3,1)}
+.reveal.in{opacity:1;transform:translateY(0)}
+.neon-box{position:relative;animation:neonBorder 3.4s ease-in-out infinite}
+</style>
+</head>
+
+<body>
+<div id="root"><div style="min-height:100vh;background:#07070f;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;color:rgba(232,234,240,0.5);font-size:0.9rem;letter-spacing:0.05em">Loading AttendX...</div></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+    collection, getDocs, query, where
+  } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAe_GQmiy1ET8rrkXV_bGdyzqTVLv21YWo",
+    authDomain: "attendx-hsc.firebaseapp.com",
+    projectId: "attendx-hsc",
+    storageBucket: "attendx-hsc.firebasestorage.app",
+    messagingSenderId: "600835179521",
+    appId: "1:600835179521:web:7797e0bebe0fd3182e2c00"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Expose to the classic (non-module) Babel script below
+  window.__fb = { db, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where };
+  window.__fbReady = true;
+</script>
+
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+
+/* ─── COLORS ─── */
+const P="#5b9bd5",T="#4ecdc4",BG="#07070f",CARD="rgba(255,255,255,0.035)",BORDER="rgba(91,155,213,0.14)",TEXT="#e8eaf0",MUTED="rgba(232,234,240,0.5)",DIM="rgba(232,234,240,0.25)";
+const GRAD=`linear-gradient(135deg,${P},${T})`;
+
+/* ─── STORAGE (Firestore-backed) ───
+   Real data (teachers + classes) lives in Cloud Firestore so it's
+   accessible from any device. Only a small "who is logged in on
+   this device" session pointer stays in localStorage. */
+const LS={
+  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}},
+  del:k=>{try{localStorage.removeItem(k)}catch{}}
+};
+
+// session = lightweight "remember who's logged in" cache for this browser
+const getSession=()=>LS.get("ax_session");
+const setSession=v=>LS.set("ax_session",v);
+const clearSession=()=>LS.del("ax_session");
+
+function fb(){
+  if(!window.__fb)throw new Error("Firebase not ready yet");
+  return window.__fb;
+}
+
+/* Teachers — doc id = teacher's chosen ID (lowercased) */
+async function fbGetTeacher(id){
+  const {db,doc,getDoc}=fb();
+  const snap=await getDoc(doc(db,"teachers",id.toLowerCase()));
+  return snap.exists()?snap.data():null;
+}
+async function fbCreateTeacher(t){
+  const {db,doc,setDoc}=fb();
+  await setDoc(doc(db,"teachers",t.id.toLowerCase()),t);
+}
+
+/* Classes — doc id = class's own uid, has a teacherId field for ownership */
+async function fbGetClassesForTeacher(teacherId){
+  const {db,collection,getDocs,query,where}=fb();
+  const q=query(collection(db,"classes"),where("teacherId","==",teacherId.toLowerCase()));
+  const snap=await getDocs(q);
+  return snap.docs.map(d=>d.data());
+}
+async function fbGetClass(classId){
+  const {db,doc,getDoc}=fb();
+  const snap=await getDoc(doc(db,"classes",classId));
+  return snap.exists()?snap.data():null;
+}
+async function fbSaveClass(cls){
+  const {db,doc,setDoc}=fb();
+  await setDoc(doc(db,"classes",cls.id),cls);
+}
+async function fbDeleteClass(classId){
+  const {db,doc,deleteDoc}=fb();
+  await deleteDoc(doc(db,"classes",classId));
+}
+async function fbFindClassByCode(code){
+  const {db,collection,getDocs,query,where}=fb();
+  const q=query(collection(db,"classes"),where("code","==",code));
+  const snap=await getDocs(q);
+  return snap.empty?null:snap.docs[0].data();
+}
+
+/* ─── UTILS ─── */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+const code6=()=>Math.random().toString(36).slice(2,8).toUpperCase();
+const today=()=>new Date().toISOString().split("T")[0];
+const pct=(sid,att,hols)=>{
+  const h=new Set(hols||[]);
+  const days=Object.keys(att||{}).filter(d=>!h.has(d));
+  if(!days.length)return null;
+  return Math.round(days.filter(d=>(att[d]||{})[sid]===true).length/days.length*100);
+};
+const grade=p=>{
+  if(p===null)return null;
+  if(p>=85)return{c:"#56c47a",bg:"rgba(86,196,122,0.12)",b:"rgba(86,196,122,0.3)",t:"Safe 🟢"};
+  if(p>=65)return{c:"#f0c040",bg:"rgba(240,192,64,0.12)",b:"rgba(240,192,64,0.3)",t:"Average 🟡"};
+  if(p>=40)return{c:"#f0904a",bg:"rgba(240,144,74,0.12)",b:"rgba(240,144,74,0.3)",t:"Danger 🟠"};
+  return{c:"#e85555",bg:"rgba(232,85,85,0.12)",b:"rgba(232,85,85,0.3)",t:"Critical 🔴"};
+};
+
+/* ─── SHARED UI ─── */
+const inputS={width:"100%",padding:"11px 14px",background:"rgba(255,255,255,0.055)",border:"1px solid rgba(91,155,213,0.22)",borderRadius:10,color:TEXT,fontSize:"0.92rem",outline:"none",transition:"border 0.2s",caretColor:P};
+const fIn=e=>e.target.style.borderColor=P;
+const fOut=e=>e.target.style.borderColor="rgba(91,155,213,0.22)";
+
+function Input({value,onChange,placeholder,onKeyDown,autoFocus,type="text"}){
+  return <input type={type} value={value} onChange={onChange} placeholder={placeholder} onKeyDown={onKeyDown} autoFocus={autoFocus} style={inputS} onFocus={fIn} onBlur={fOut}/>;
+}
+function PwdInput({value,onChange,onKeyDown}){
+  const [show,setShow]=useState(false);
+  return <div style={{position:"relative"}}>
+    <input type={show?"text":"password"} value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder="Password" style={{...inputS,paddingRight:42}} onFocus={fIn} onBlur={fOut}/>
+    <button onClick={()=>setShow(s=>!s)} type="button" style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:MUTED,fontSize:"1rem"}}>{show?"🙈":"👁️"}</button>
+  </div>;
+}
+function Btn({onClick,children,full,sm,ghost,disabled,danger}){
+  const bg=disabled?"rgba(91,155,213,0.15)":danger?"linear-gradient(135deg,#e85555,#c43030)":ghost?"transparent":GRAD;
+  const border=ghost?`1px solid rgba(91,155,213,0.3)`:"none";
+  const col=disabled?"rgba(232,234,240,0.3)":ghost?P:"#07070f";
+  return <button onClick={onClick} disabled={disabled} type="button" style={{width:full?"100%":"auto",padding:sm?"7px 15px":"12px 22px",background:bg,border,borderRadius:10,color:col,fontWeight:700,fontSize:sm?"0.82rem":"0.92rem",cursor:disabled?"not-allowed":"pointer",fontFamily:"'Syne',sans-serif",boxShadow:disabled||ghost?"none":`0 0 18px rgba(91,155,213,0.28)`,animation:disabled||ghost?"none":"glowPulse 3.2s ease-in-out infinite",transition:"all 0.2s"}}
+    onMouseEnter={e=>{if(!disabled&&!ghost){e.currentTarget.style.animation="none";e.currentTarget.style.transform="scale(1.03)";e.currentTarget.style.boxShadow=`0 0 30px rgba(91,155,213,0.5)`}if(ghost&&!disabled){e.currentTarget.style.background="rgba(91,155,213,0.08)"}}}
+    onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.boxShadow=disabled||ghost?"none":`0 0 18px rgba(91,155,213,0.28)`;if(!disabled&&!ghost)e.currentTarget.style.animation="glowPulse 3.2s ease-in-out infinite";if(ghost)e.currentTarget.style.background="transparent"}}
+  >{children}</button>;
+}
+function Card({children,style={}}){return <div style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:16,padding:"1.4rem",...style}}>{children}</div>}
+function Label({text}){return <div style={{fontSize:"0.73rem",fontWeight:600,color:MUTED,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>{text}</div>}
+function Err({msg}){return msg?<div style={{background:"rgba(232,85,85,0.1)",border:"1px solid rgba(232,85,85,0.28)",borderRadius:9,padding:"9px 13px",color:"#e85555",fontSize:"0.83rem",marginTop:10}}>⚠️ {msg}</div>:null}
+function Ok({msg}){return msg?<div style={{background:"rgba(86,196,122,0.1)",border:"1px solid rgba(86,196,122,0.28)",borderRadius:9,padding:"9px 13px",color:"#56c47a",fontSize:"0.83rem",marginTop:10}}>✅ {msg}</div>:null}
+function Credit(){return <div style={{textAlign:"center",marginTop:"1.5rem",paddingTop:"1.1rem",borderTop:"1px solid rgba(91,155,213,0.08)",fontSize:"0.73rem",fontWeight:600,background:GRAD,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",letterSpacing:"0.04em"}}>⚡ by Raunak · Holkar Science College</div>}
+function Topbar({onHome,right}){
+  return <div style={{height:60,background:"rgba(7,7,15,0.97)",borderBottom:`1px solid ${BORDER}`,backdropFilter:"blur(20px)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1.4rem",position:"sticky",top:0,zIndex:100}}>
+    <div onClick={onHome} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+      <div style={{width:33,height:33,borderRadius:9,background:GRAD,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,boxShadow:`0 0 14px rgba(91,155,213,0.4)`}}>🎓</div>
+      <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,color:TEXT,fontSize:"1.02rem",letterSpacing:"0.02em"}}>AttendX</span>
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:9}}>{right}</div>
+  </div>;
+}
+function AmbientBG(){
+  const particles=Array.from({length:18},(_,i)=>({
+    key:i,
+    left:(i*53.7)%100,
+    size:2+((i*11)%4),
+    dur:16+((i*7)%14),
+    delay:-((i*29)%18),
+    px:`${((i%2===0?1:-1))*(10+((i*5)%26))}px`,
+    hue:i%3===0?T:P
+  }));
+  return <div style={{position:"fixed",inset:0,zIndex:0,overflow:"hidden",pointerEvents:"none"}}>
+    <div style={{position:"absolute",top:"-12%",left:"-10%",width:560,height:560,borderRadius:"50%",background:"radial-gradient(circle,rgba(91,155,213,0.22) 0%,transparent 70%)",filter:"blur(30px)",animation:"bgDrift1 24s ease-in-out infinite"}}/>
+    <div style={{position:"absolute",bottom:"-16%",right:"-12%",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(78,205,196,0.2) 0%,transparent 70%)",filter:"blur(30px)",animation:"bgDrift2 28s ease-in-out infinite"}}/>
+    <div style={{position:"absolute",top:"50%",left:"50%",width:480,height:480,borderRadius:"50%",background:"radial-gradient(circle,rgba(91,155,213,0.12) 0%,transparent 70%)",filter:"blur(30px)",animation:"bgDrift3 32s ease-in-out infinite"}}/>
+    <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(91,155,213,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(91,155,213,0.04) 1px,transparent 1px)",backgroundSize:"42px 42px",animation:"gridMove 16s linear infinite",opacity:0.45,maskImage:"radial-gradient(circle at 50% 30%,#000 0%,transparent 75%)",WebkitMaskImage:"radial-gradient(circle at 50% 30%,#000 0%,transparent 75%)"}}/>
+    {particles.map(p=><span key={p.key} style={{position:"absolute",left:`${p.left}%`,bottom:-12,width:p.size,height:p.size,borderRadius:"50%",background:p.hue,boxShadow:`0 0 ${p.size*4}px ${p.hue}`,opacity:0,"--px":p.px,animation:`particleRise ${p.dur}s linear infinite`,animationDelay:`${p.delay}s`}}/>)}
+  </div>;
+}
+function Page({children}){return <div style={{minHeight:"100vh",background:BG,color:TEXT,fontFamily:"'DM Sans',sans-serif",position:"relative"}}><AmbientBG/><div style={{position:"relative",zIndex:1}}>{children}</div></div>}
+function Field({label,children}){return <div style={{marginBottom:"0.9rem"}}><Label text={label}/>{children}</div>}
+
+/* ════════════════════════════════════════════
+   LANDING PAGE
+════════════════════════════════════════════ */
+function Landing({goSetup,goLogin,goStudent}){
+  const [sy,setSy]=useState(0);
+  useEffect(()=>{const f=()=>setSy(window.scrollY);window.addEventListener("scroll",f);return()=>window.removeEventListener("scroll",f);},[]);
+  useEffect(()=>{
+    const els=document.querySelectorAll(".reveal");
+    const obs=new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add("in");obs.unobserve(en.target);}});
+    },{threshold:0.15,rootMargin:"0px 0px -40px 0px"});
+    els.forEach(el=>obs.observe(el));
+    return()=>obs.disconnect();
+  },[]);
+  const has=!!getSession();
+
+  const features=[
+    {i:"🎯",t:"Smart Attendance",d:"Checkbox-based, all absent by default. Mark present, hit save. Done in 60 seconds for 100+ students."},
+    {i:"🏖️",t:"Holiday Marking",d:"One tap marks a holiday. That day is excluded from everyone's % calculation automatically."},
+    {i:"📊",t:"Colour Grading",d:"Every student gets a live colour grade — Safe, Average, Danger, Critical — no manual math needed."},
+    {i:"📅",t:"Date Search",d:"Pick any date to see exactly who was present, absent, or if it was a holiday."},
+    {i:"➕",t:"Add Anytime",d:"Add students mid-semester without touching old records. Fully flexible."},
+    {i:"🔄",t:"Move Students",d:"Wrong class? Move a student in one tap. No data lost."},
+    {i:"🔐",t:"Student Self-Check",d:"Students enter class code + name to see their own attendance. No account needed."},
+    {i:"💾",t:"Persistent Storage",d:"All data lives in the browser. Logout and return — everything is exactly where you left it."},
+    {i:"📱",t:"Works Everywhere",d:"Phone, tablet, laptop — any browser. No install, no app store, just a link."},
+  ];
+  const grades=[
+    {i:"🟢",l:"Safe",r:"85% & above",c:"#56c47a",bg:"rgba(86,196,122,0.1)",b:"rgba(86,196,122,0.28)",d:"Regular. No action needed."},
+    {i:"🟡",l:"Average",r:"65% – 84%",c:"#f0c040",bg:"rgba(240,192,64,0.1)",b:"rgba(240,192,64,0.28)",d:"Slipping. Keep an eye."},
+    {i:"🟠",l:"Danger",r:"40% – 64%",c:"#f0904a",bg:"rgba(240,144,74,0.1)",b:"rgba(240,144,74,0.28)",d:"Needs immediate attention."},
+    {i:"🔴",l:"Critical",r:"Below 40%",c:"#e85555",bg:"rgba(232,85,85,0.1)",b:"rgba(232,85,85,0.28)",d:"Action required urgently."},
+  ];
+  const tSteps=[
+    {n:"01",t:"One-time Setup",d:"Click 'New Teacher', enter your name, create an ID & password. Takes 30 seconds."},
+    {n:"02",t:"Create a Class",d:"Dashboard → '+ New Class' → give it a name. A unique 6-char code is auto-generated."},
+    {n:"03",t:"Add Students",d:"Open class → Students tab → type names. Add more anytime, even mid-semester."},
+    {n:"04",t:"Daily Attendance",d:"Attendance tab → pick date → tick present students → Save. All absent by default."},
+    {n:"05",t:"Mark Holidays",d:"Tap 'Mark Holiday' on any date. It's excluded from everyone's % automatically."},
+    {n:"06",t:"View Reports",d:"Summary tab → each student's % with colour grade. Date Search → look up any specific date."},
+  ];
+  const sSteps=[
+    {n:"01",t:"Get Class Code",d:"Ask your teacher for the 6-character class code (like 'AB12CD')."},
+    {n:"02",t:"Open Student View",d:"On the home page, click 'Student — Check My Attendance'."},
+    {n:"03",t:"Enter Details",d:"Type your class code and your name exactly as your teacher entered it."},
+    {n:"04",t:"See Your Record",d:"Your %, colour grade, and full date-by-date history appears instantly."},
+  ];
+
+  return <div style={{background:BG,color:TEXT,fontFamily:"'DM Sans',sans-serif",overflowX:"hidden"}}>
+    <style>{`
+      .nav-link{color:${MUTED};text-decoration:none;font-size:0.87rem;font-weight:500;transition:color 0.2s}
+      .nav-link:hover{color:${P}}
+      .feat-card:hover{transform:translateY(-5px)!important;border-color:rgba(91,155,213,0.38)!important}
+      .grade-card:hover{transform:scale(1.04)!important}
+      .step-row:hover{border-color:rgba(91,155,213,0.25)!important}
+      @keyframes glowPulse{0%,100%{box-shadow:0 0 24px rgba(91,155,213,0.35)}50%{box-shadow:0 0 48px rgba(91,155,213,0.7)}}
+      @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+      @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+    `}</style>
+
+    {/* NAV */}
+    <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,height:62,background:sy>30?"rgba(7,7,15,0.96)":"transparent",backdropFilter:sy>30?"blur(22px)":"none",borderBottom:sy>30?`1px solid ${BORDER}`:"none",transition:"all 0.35s",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1.6rem"}}>
+      <div style={{display:"flex",alignItems:"center",gap:11}}>
+        <div style={{width:36,height:36,borderRadius:10,background:GRAD,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,animation:"float 3s ease-in-out infinite, glowPulse 3s ease-in-out infinite",boxShadow:`0 0 16px rgba(91,155,213,0.45)`}}>🎓</div>
+        <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1.1rem",letterSpacing:"0.02em"}}>AttendX</span>
+      </div>
+      <div style={{display:"flex",gap:"1.4rem",alignItems:"center"}}>
+        <a href="#features" className="nav-link">Features</a>
+        <a href="#grading" className="nav-link">Grading</a>
+        <a href="#howto" className="nav-link">How to Use</a>
+      </div>
+      <div style={{display:"flex",gap:"0.55rem"}}>
+        <button onClick={goStudent} style={{padding:"7px 16px",background:"transparent",border:`1px solid rgba(91,155,213,0.28)`,borderRadius:9,color:P,fontSize:"0.83rem",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(91,155,213,0.09)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>🎓 Student</button>
+        <button onClick={has?goLogin:goSetup} style={{padding:"7px 16px",background:GRAD,border:"none",borderRadius:9,color:"#07070f",fontSize:"0.83rem",fontWeight:700,cursor:"pointer",fontFamily:"'Syne',sans-serif",boxShadow:`0 0 14px rgba(91,155,213,0.32)`,transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>🔐 Teacher</button>
+      </div>
+    </nav>
+
+    {/* HERO */}
+    <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"6rem 1.5rem 4rem",position:"relative"}}>
+      <div style={{position:"absolute",top:"15%",left:"8%",width:380,height:380,borderRadius:"50%",background:`radial-gradient(circle,rgba(91,155,213,0.16) 0%,transparent 70%)`,pointerEvents:"none",animation:"drift 9s ease-in-out infinite"}}/>
+      <div style={{position:"absolute",bottom:"15%",right:"6%",width:280,height:280,borderRadius:"50%",background:`radial-gradient(circle,rgba(78,205,196,0.15) 0%,transparent 70%)`,pointerEvents:"none",animation:"drift 11s ease-in-out infinite reverse"}}/>
+      <div style={{position:"absolute",inset:0,background:`radial-gradient(ellipse at 50% 40%,rgba(91,155,213,0.05) 0%,transparent 65%)`,pointerEvents:"none"}}/>
+
+      {/* badge */}
+      <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(91,155,213,0.08)",border:"1px solid rgba(91,155,213,0.22)",borderRadius:100,padding:"5px 16px",fontSize:"0.72rem",color:P,fontWeight:600,letterSpacing:"0.09em",textTransform:"uppercase",marginBottom:"1.8rem",animation:"fadeUp 0.6s ease both"}}>
+        <span style={{width:6,height:6,borderRadius:"50%",background:T,display:"inline-block",animation:"blink 2s infinite"}}/>
+        Smart Attendance for Colleges
+      </div>
+
+      <h1 style={{fontFamily:"'Syne',sans-serif",fontSize:"clamp(2.5rem,6.5vw,4.4rem)",fontWeight:800,lineHeight:1.07,marginBottom:"1.4rem",maxWidth:740,background:`linear-gradient(110deg,${TEXT} 10%,${P} 40%,${T} 60%,${P} 90%)`,backgroundSize:"200% 200%",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"fadeUp 0.6s 0.1s ease both, gradientShift 6s ease-in-out infinite",opacity:0}}>
+        Attendance Management,<br/>Reimagined for Classrooms.
+      </h1>
+
+      <p style={{fontSize:"1.06rem",color:MUTED,maxWidth:520,lineHeight:1.82,marginBottom:"2.6rem",animation:"fadeUp 0.6s 0.2s ease both",opacity:0}}>
+        Mark 100+ students in seconds. Colour-grade every student instantly. Let students check their own attendance — all from one link, on any device.
+      </p>
+
+      {/* 3 ACTION BUTTONS */}
+      <div style={{display:"flex",flexDirection:"column",gap:"0.7rem",width:"100%",maxWidth:390,marginBottom:"4.5rem",animation:"fadeUp 0.6s 0.3s ease both",opacity:0}}>
+        <button onClick={goSetup} style={{width:"100%",padding:"14px",background:GRAD,border:"none",borderRadius:12,color:"#07070f",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"1rem",cursor:"pointer",animation:"glowPulse 3s infinite",transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+          🧑‍🏫 New Teacher? Create Account
+        </button>
+        <button onClick={goLogin} style={{width:"100%",padding:"14px",background:"rgba(91,155,213,0.08)",border:`1px solid rgba(91,155,213,0.38)`,borderRadius:12,color:P,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"1rem",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(91,155,213,0.15)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(91,155,213,0.08)"}>
+          🔐 Already have an Account? Sign In
+        </button>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{flex:1,height:1,background:`rgba(91,155,213,0.1)`}}/>
+          <span style={{fontSize:"0.73rem",color:DIM}}>or</span>
+          <div style={{flex:1,height:1,background:`rgba(91,155,213,0.1)`}}/>
+        </div>
+        <button onClick={goStudent} style={{width:"100%",padding:"13px",background:"transparent",border:`1px solid rgba(78,205,196,0.22)`,borderRadius:12,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"0.95rem",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(78,205,196,0.5)";e.currentTarget.style.color=T}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(78,205,196,0.22)";e.currentTarget.style.color=MUTED}}>
+          🎓 Student — Check My Attendance
+        </button>
+      </div>
+
+      {/* STATS */}
+      <div style={{display:"flex",gap:"3.5rem",flexWrap:"wrap",justifyContent:"center",animation:"fadeUp 0.6s 0.4s ease both",opacity:0}}>
+        {[{v:"100+",l:"Students/Class"},{v:"4",l:"Grade Levels"},{v:"∞",l:"Classes"},{v:"Free",l:"Forever"}].map(s=><div key={s.l} style={{textAlign:"center"}}>
+          <div style={{fontFamily:"'Syne',sans-serif",fontSize:"1.9rem",fontWeight:800,background:GRAD,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>{s.v}</div>
+          <div style={{fontSize:"0.7rem",color:DIM,letterSpacing:"0.07em",textTransform:"uppercase",marginTop:3}}>{s.l}</div>
+        </div>)}
+      </div>
+
+      <div style={{position:"absolute",bottom:"2rem",left:"50%",transform:"translateX(-50%)",display:"flex",flexDirection:"column",alignItems:"center",gap:6,opacity:0.28}}>
+        <span style={{fontSize:"0.68rem",letterSpacing:"0.1em",textTransform:"uppercase",color:MUTED}}>Scroll</span>
+        <div style={{width:1,height:28,background:`linear-gradient(to bottom,${P},transparent)`}}/>
+      </div>
+    </section>
+
+    {/* FEATURES */}
+    <section id="features" style={{padding:"5rem 1.5rem",maxWidth:1060,margin:"0 auto"}}>
+      <div style={{textAlign:"center",marginBottom:"3.5rem"}}>
+        <p style={{color:P,fontSize:"0.71rem",fontWeight:600,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:"0.55rem"}}>Everything You Need</p>
+        <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:"clamp(1.8rem,4vw,2.5rem)",fontWeight:800}}>Built for Classrooms</h2>
+        <p style={{color:MUTED,fontSize:"0.89rem",marginTop:"0.6rem",maxWidth:460,margin:"0.6rem auto 0",lineHeight:1.72}}>Every feature designed to save time and make attendance effortless for teachers</p>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(295px,1fr))",gap:"1rem"}}>
+        {features.map((f,fi)=><div key={f.t} className="feat-card reveal" style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:15,padding:"1.6rem",transition:"all 0.26s",transitionDelay:`${(fi%3)*0.08}s`}}>
+          <div style={{fontSize:"1.9rem",marginBottom:"0.7rem"}}>{f.i}</div>
+          <h3 style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.98rem",marginBottom:"0.45rem"}}>{f.t}</h3>
+          <p style={{fontSize:"0.83rem",color:MUTED,lineHeight:1.72}}>{f.d}</p>
+        </div>)}
+      </div>
+    </section>
+
+    {/* GRADING */}
+    <section id="grading" style={{padding:"4.5rem 1.5rem",maxWidth:900,margin:"0 auto"}}>
+      <div style={{textAlign:"center",marginBottom:"2.75rem"}}>
+        <p style={{color:P,fontSize:"0.71rem",fontWeight:600,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:"0.55rem"}}>Attendance Grading</p>
+        <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:"clamp(1.7rem,4vw,2.4rem)",fontWeight:800}}>Know Who Needs Help — Instantly</h2>
+        <p style={{color:MUTED,fontSize:"0.89rem",marginTop:"0.6rem",lineHeight:1.72}}>Every student is auto-assigned a colour grade based on their attendance %</p>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(195px,1fr))",gap:"1rem"}}>
+        {grades.map((g,gi)=><div key={g.l} className="grade-card reveal" style={{background:g.bg,border:`1px solid ${g.b}`,borderRadius:14,padding:"1.5rem 1.1rem",textAlign:"center",transition:"transform 0.22s",transitionDelay:`${gi*0.08}s`}}>
+          <div style={{fontSize:"2.1rem",marginBottom:"0.5rem"}}>{g.i}</div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1.08rem",color:g.c,marginBottom:"0.2rem"}}>{g.l}</div>
+          <div style={{fontSize:"0.8rem",fontWeight:600,color:g.c,opacity:0.8,marginBottom:"0.5rem"}}>{g.r}</div>
+          <div style={{fontSize:"0.76rem",color:MUTED,lineHeight:1.62}}>{g.d}</div>
+        </div>)}
+      </div>
+    </section>
+
+    {/* HOW TO USE */}
+    <section id="howto" style={{padding:"4.5rem 1.5rem",maxWidth:980,margin:"0 auto"}}>
+      <div style={{textAlign:"center",marginBottom:"3rem"}}>
+        <p style={{color:P,fontSize:"0.71rem",fontWeight:600,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:"0.55rem"}}>Step-by-Step Guide</p>
+        <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:"clamp(1.7rem,4vw,2.4rem)",fontWeight:800}}>How to Use AttendX</h2>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))",gap:"1.5rem"}}>
+        {/* Teacher */}
+        <div style={{background:"rgba(91,155,213,0.04)",border:"1px solid rgba(91,155,213,0.15)",borderRadius:18,padding:"1.8rem"}}>
+          <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:"1.4rem"}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"rgba(91,155,213,0.1)",border:"1px solid rgba(91,155,213,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.35rem"}}>🧑‍🏫</div>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1.02rem",color:P}}>For Teachers</div>
+              <div style={{fontSize:"0.73rem",color:MUTED}}>Manage classes & take attendance</div>
+            </div>
+          </div>
+          {tSteps.map((s,si)=><div key={s.n} className="step-row reveal" style={{display:"flex",gap:"0.9rem",marginBottom:"0.75rem",padding:"0.9rem 1rem",background:"rgba(255,255,255,0.025)",borderRadius:11,border:"1px solid rgba(91,155,213,0.06)",transition:"border 0.2s",transitionDelay:`${si*0.05}s`}}>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"0.75rem",color:P,opacity:0.55,flexShrink:0,paddingTop:2}}>{s.n}</div>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.87rem",marginBottom:"0.18rem"}}>{s.t}</div>
+              <div style={{fontSize:"0.78rem",color:MUTED,lineHeight:1.65}}>{s.d}</div>
+            </div>
+          </div>)}
+        </div>
+        {/* Student */}
+        <div style={{background:"rgba(78,205,196,0.04)",border:"1px solid rgba(78,205,196,0.15)",borderRadius:18,padding:"1.8rem"}}>
+          <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:"1.4rem"}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"rgba(78,205,196,0.1)",border:"1px solid rgba(78,205,196,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.35rem"}}>🎓</div>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1.02rem",color:T}}>For Students</div>
+              <div style={{fontSize:"0.73rem",color:MUTED}}>No account needed</div>
+            </div>
+          </div>
+          {sSteps.map((s,si)=><div key={s.n} className="step-row reveal" style={{display:"flex",gap:"0.9rem",marginBottom:"0.75rem",padding:"0.9rem 1rem",background:"rgba(255,255,255,0.025)",borderRadius:11,border:"1px solid rgba(78,205,196,0.06)",transition:"border 0.2s",transitionDelay:`${si*0.05}s`}}>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"0.75rem",color:T,opacity:0.55,flexShrink:0,paddingTop:2}}>{s.n}</div>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.87rem",marginBottom:"0.18rem"}}>{s.t}</div>
+              <div style={{fontSize:"0.78rem",color:MUTED,lineHeight:1.65}}>{s.d}</div>
+            </div>
+          </div>)}
+          <div style={{background:"rgba(78,205,196,0.07)",border:"1px solid rgba(78,205,196,0.18)",borderRadius:10,padding:"0.85rem 1rem",marginTop:"0.4rem"}}>
+            <span style={{fontSize:"0.77rem",color:"rgba(78,205,196,0.88)",lineHeight:1.65}}>💡 <b>Note:</b> Students need only their class code and exact name — no password, no login.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    {/* ABOUT */}
+    <section style={{padding:"4rem 1.5rem",maxWidth:640,margin:"0 auto",textAlign:"center"}}>
+      <div className="reveal" style={{position:"relative",background:CARD,border:`1px solid ${BORDER}`,borderRadius:20,padding:"2.5rem 2rem",overflow:"hidden"}}>
+        {/* mast neon background animation */}
+        <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+          <div style={{position:"absolute",top:"-40%",left:"-20%",width:340,height:340,borderRadius:"50%",background:"radial-gradient(circle,rgba(91,155,213,0.35) 0%,transparent 70%)",filter:"blur(10px)",animation:"drift 7s ease-in-out infinite"}}/>
+          <div style={{position:"absolute",bottom:"-45%",right:"-15%",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle,rgba(78,205,196,0.32) 0%,transparent 70%)",filter:"blur(10px)",animation:"drift 9s ease-in-out infinite reverse"}}/>
+          <div style={{position:"absolute",top:"50%",left:"50%",width:520,height:520,marginLeft:-260,marginTop:-260,borderRadius:"50%",background:"conic-gradient(from 0deg,rgba(91,155,213,0.16),rgba(78,205,196,0.16),rgba(91,155,213,0.16))",animation:"spin 14s linear infinite",opacity:0.5}}/>
+        </div>
+
+        <div style={{position:"relative"}}>
+        <div style={{width:60,height:60,borderRadius:"50%",background:GRAD,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem",margin:"0 auto 1.1rem",animation:"glowPulse 2.6s ease-in-out infinite"}}>👨‍💻</div>
+        <h3 style={{fontFamily:"'Syne',sans-serif",fontSize:"1.25rem",fontWeight:800,marginBottom:"0.4rem"}}>Built by Raunak</h3>
+        <p style={{color:P,fontSize:"0.84rem",fontWeight:600,marginBottom:"1rem"}}>B.Sc CS · Holkar Science College, Indore</p>
+        <p style={{color:MUTED,fontSize:"0.87rem",lineHeight:1.82,marginBottom:"1.3rem"}}>
+          AttendX was built to solve a real problem — teachers spending valuable class time on manual attendance registers. This app brings the entire process online: faster, smarter, accessible from any device.
+        </p>
+        <div style={{display:"flex",gap:"0.5rem",justifyContent:"center",flexWrap:"wrap",marginBottom:"1.5rem"}}>
+          {["Data Science","Python","Machine Learning","GenAI","Web Dev"].map(tag=><span key={tag} style={{background:"rgba(91,155,213,0.09)",border:"1px solid rgba(91,155,213,0.2)",borderRadius:100,padding:"3px 12px",fontSize:"0.74rem",color:P}}>#{tag}</span>)}
+        </div>
+        <a href="https://raunakverma.netlify.app" target="_blank" rel="noopener noreferrer" className="neon-box" style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(91,155,213,0.09)",border:`1px solid rgba(91,155,213,0.35)`,borderRadius:100,padding:"10px 22px",cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.85rem",color:P,transition:"transform 0.2s,background 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.05)";e.currentTarget.style.background="rgba(91,155,213,0.16)"}} onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.background="rgba(91,155,213,0.09)"}}>🌐 Know More About Me →</a>
+        </div>
+      </div>
+    </section>
+
+    {/* FINAL CTA */}
+    <section style={{padding:"3.5rem 1.5rem 2.5rem",textAlign:"center",maxWidth:440,margin:"0 auto"}}>
+      <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:"clamp(1.6rem,4vw,2rem)",fontWeight:800,marginBottom:"0.65rem"}}>Ready to get started?</h2>
+      <p style={{color:MUTED,fontSize:"0.88rem",lineHeight:1.75,marginBottom:"1.75rem"}}>Free forever. No install. Works on any device.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:"0.65rem"}}>
+        <button onClick={goSetup} style={{padding:"13px",background:GRAD,border:"none",borderRadius:12,color:"#07070f",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.95rem",cursor:"pointer",boxShadow:`0 0 22px rgba(91,155,213,0.32)`,transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>🧑‍🏫 New Teacher? Create Account</button>
+        <button onClick={goLogin} style={{padding:"12px",background:"rgba(91,155,213,0.08)",border:`1px solid rgba(91,155,213,0.32)`,borderRadius:12,color:P,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.95rem",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(91,155,213,0.14)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(91,155,213,0.08)"}>🔐 Already have an Account? Sign In</button>
+        <button onClick={goStudent} style={{padding:"12px",background:"transparent",border:`1px solid rgba(78,205,196,0.2)`,borderRadius:12,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"0.92rem",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(78,205,196,0.48)";e.currentTarget.style.color=T}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(78,205,196,0.2)";e.currentTarget.style.color=MUTED}}>🎓 Student — Check My Attendance</button>
+      </div>
+    </section>
+
+    {/* FOOTER */}
+    <footer style={{borderTop:`1px solid ${BORDER}`,padding:"2.5rem 1.5rem",textAlign:"center",marginTop:"1rem"}}>
+      <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"rgba(91,155,213,0.07)",border:`1px solid rgba(91,155,213,0.14)`,borderRadius:100,padding:"8px 20px",marginBottom:"0.8rem"}}>
+        <span>⚡</span>
+        <span style={{fontFamily:"'Syne',sans-serif",fontSize:"0.81rem",fontWeight:700,background:GRAD,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Crafted by Raunak</span>
+        <span style={{width:1,height:14,background:"rgba(91,155,213,0.28)",display:"inline-block"}}/>
+        <span style={{fontSize:"0.76rem",color:DIM}}>Holkar Science College</span>
+      </div>
+      <div style={{fontSize:"0.76rem",color:"rgba(232,234,240,0.24)",marginBottom:"0.28rem"}}>B.Sc CS · Data Science Enthusiast · Building cool things 🚀</div>
+      <div style={{fontSize:"0.7rem",color:"rgba(232,234,240,0.13)"}}>AttendX © 2026 — Built for Teachers, with ❤️</div>
+    </footer>
+  </div>;
+}
+
+/* ════════════════════════════════════════════
+   SETUP
+════════════════════════════════════════════ */
+function Setup({onDone,onBack}){
+  const [name,setName]=useState("");
+  const [id,setId]=useState("");
+  const [pw,setPw]=useState("");
+  const [pw2,setPw2]=useState("");
+  const [err,setErr]=useState("");
+  const [busy,setBusy]=useState(false);
+
+  async function submit(){
+    setErr("");
+    if(!name.trim())return setErr("Please enter your name.");
+    if(id.trim().length<4)return setErr("Teacher ID must be at least 4 characters.");
+    if(pw.length<6)return setErr("Password must be at least 6 characters.");
+    if(pw!==pw2)return setErr("Passwords do not match.");
+    setBusy(true);
+    try{
+      const existing=await fbGetTeacher(id.trim());
+      if(existing){setBusy(false);return setErr("This Teacher ID is already taken. Choose another.");}
+      const t={name:name.trim(),id:id.trim(),pw};
+      await fbCreateTeacher(t);
+      setSession(t);
+      onDone(t);
+    }catch(e){
+      setErr("Could not reach the server. Check your internet and try again.");
+    }
+    setBusy(false);
+  }
+
+  return <Page>
+    <Topbar onHome={onBack} right={<Btn onClick={onBack} ghost sm>← Home</Btn>}/>
+    <div style={{minHeight:"calc(100vh - 60px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem 1.2rem"}}>
+      <Card style={{width:"100%",maxWidth:430}}>
+        <div style={{textAlign:"center",marginBottom:"1.6rem"}}>
+          <div style={{fontSize:"2.6rem",marginBottom:"0.5rem"}}>👋</div>
+          <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:"1.5rem",fontWeight:800,marginBottom:"0.3rem"}}>First Time Setup</h2>
+          <p style={{color:MUTED,fontSize:"0.84rem"}}>Create your teacher account — one time only!</p>
+        </div>
+        <div style={{background:"rgba(78,205,196,0.07)",border:"1px solid rgba(78,205,196,0.2)",borderRadius:10,padding:"8px 13px",marginBottom:"1.2rem",fontSize:"0.8rem",color:"rgba(78,205,196,0.88)",display:"flex",gap:8,alignItems:"flex-start"}}>
+          <span>🔒</span><span>Remember your ID & password — you'll need them every time you login!</span>
+        </div>
+        <Field label="Your Name"><Input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Dr. Sharma" autoFocus/></Field>
+        <Field label="Teacher ID (min 4 chars)"><Input value={id} onChange={e=>setId(e.target.value)} placeholder="e.g. sharma2024"/></Field>
+        <Field label="Password (min 6 chars)"><PwdInput value={pw} onChange={e=>setPw(e.target.value)}/></Field>
+        <Field label="Confirm Password"><PwdInput value={pw2} onChange={e=>setPw2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}/></Field>
+        <Err msg={err}/>
+        <div style={{marginTop:"1.1rem",display:"flex",flexDirection:"column",gap:"0.55rem"}}>
+          <Btn onClick={submit} full disabled={busy}>{busy?"Creating…":"Create Account →"}</Btn>
+          <Btn onClick={onBack} ghost full>← Back to Home</Btn>
+        </div>
+        <Credit/>
+      </Card>
+    </div>
+  </Page>;
+             }
+  /* ════════════════════════════════════════════
+   LOGIN + STUDENT (tabbed)
+════════════════════════════════════════════ */
+function LoginPage({onLogin,onBack,onSetup,startTab="teacher"}){
+  const [tab,setTab]=useState(startTab);
+  // teacher
+  const [tid,setTid]=useState("");
+  const [tpw,setTpw]=useState("");
+  const [terr,setTerr]=useState("");
+  // student
+  const [scode,setScode]=useState("");
+  const [sname,setSname]=useState("");
+  const [sres,setSres]=useState(null);
+  const [serr,setSerr]=useState("");
+  const saved=getSession();
+  const [busyT,setBusyT]=useState(false);
+  const [busyS,setBusyS]=useState(false);
+
+  async function tLogin(){
+    setTerr("");
+    if(!tid.trim()||!tpw)return setTerr("Please fill in both fields.");
+    setBusyT(true);
+    try{
+      const t=await fbGetTeacher(tid.trim());
+      if(t&&tpw===t.pw){setSession(t);onLogin(t);}
+      else setTerr("Invalid Teacher ID or password.");
+    }catch(e){
+      setTerr("Could not reach the server. Check your internet and try again.");
+    }
+    setBusyT(false);
+  }
+  async function sCheck(){
+    setSerr("");setSres(null);
+    if(!scode.trim()||!sname.trim())return setSerr("Please fill in both fields.");
+    setBusyS(true);
+    try{
+      const cls=await fbFindClassByCode(scode.trim().toUpperCase());
+      if(!cls){setBusyS(false);return setSerr("Class code not found. Please check.");}
+      const stu=cls.students.find(s=>s.name.toLowerCase()===sname.trim().toLowerCase());
+      if(!stu){setBusyS(false);return setSerr("Name not found. Enter exact name as registered by your teacher.");}
+      const p=pct(stu.id,cls.att,cls.hols);
+      const g=grade(p);
+      const hset=new Set(cls.hols||[]);
+      const allD=Object.keys(cls.att||{}).filter(d=>!hset.has(d)).sort((a,b)=>b.localeCompare(a));
+      const presD=allD.filter(d=>(cls.att[d]||{})[stu.id]);
+      setSres({cls,stu,p,g,allD,presD});
+    }catch(e){
+      setSerr("Could not reach the server. Check your internet and try again.");
+    }
+    setBusyS(false);
+  }
+
+  const TabBtn=({k,icon,label})=><button onClick={()=>{setTab(k);setTerr("");setSerr("");setSres(null);}} style={{flex:1,padding:"11px 8px",background:tab===k?GRAD:"rgba(255,255,255,0.04)",border:tab===k?"none":`1px solid ${BORDER}`,borderRadius:10,color:tab===k?"#07070f":MUTED,fontWeight:700,fontSize:"0.88rem",cursor:"pointer",fontFamily:"'Syne',sans-serif",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{icon} {label}</button>;
+
+  return <Page>
+    <Topbar onHome={onBack} right={<Btn onClick={onBack} ghost sm>← Home</Btn>}/>
+    <div style={{minHeight:"calc(100vh - 60px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem 1.2rem"}}>
+      <div style={{width:"100%",maxWidth:430}}>
+        <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
+          <div style={{width:50,height:50,borderRadius:14,background:GRAD,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,margin:"0 auto 0.8rem",boxShadow:`0 0 22px rgba(91,155,213,0.38)`}}>🎓</div>
+          <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:"1.45rem",fontWeight:800,marginBottom:"0.25rem"}}>Welcome to AttendX</h2>
+          <p style={{color:MUTED,fontSize:"0.84rem"}}>Select who you are to continue</p>
+        </div>
+
+        <div style={{display:"flex",gap:"0.5rem",marginBottom:"1.25rem"}}>
+          <TabBtn k="teacher" icon="🔐" label="Teacher Login"/>
+          <TabBtn k="student" icon="🎓" label="Student View"/>
+        </div>
+
+        {tab==="teacher"&&<Card>
+          <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:"1.15rem"}}>
+            <span style={{fontSize:"1.2rem"}}>🔐</span>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.95rem"}}>{saved?`Welcome back, ${saved.name.split(" ")[0]}!`:"Teacher Login"}</div>
+              <div style={{fontSize:"0.73rem",color:MUTED}}>Access your dashboard & attendance</div>
+            </div>
+          </div>
+          <Field label="Teacher ID"><Input value={tid} onChange={e=>setTid(e.target.value)} placeholder="Enter your teacher ID" onKeyDown={e=>e.key==="Enter"&&tLogin()} autoFocus/></Field>
+          <Field label="Password"><PwdInput value={tpw} onChange={e=>setTpw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&tLogin()}/></Field>
+          <Err msg={terr}/>
+          <div style={{marginTop:"1rem",display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+            <Btn onClick={tLogin} full disabled={busyT}>{busyT?"Signing in…":"Sign In →"}</Btn>
+            {!saved&&<button onClick={onSetup} style={{background:"none",border:"none",color:"rgba(91,155,213,0.65)",fontSize:"0.82rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",padding:"4px 0",textAlign:"center",transition:"color 0.2s"}} onMouseEnter={e=>e.target.style.color=P} onMouseLeave={e=>e.target.style.color="rgba(91,155,213,0.65)"}>New teacher? Create an account →</button>}
+          </div>
+        </Card>}
+
+        {tab==="student"&&<Card>
+          <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:"1.15rem"}}>
+            <span style={{fontSize:"1.2rem"}}>🎓</span>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.95rem"}}>Check My Attendance</div>
+              <div style={{fontSize:"0.73rem",color:MUTED}}>No login needed — just 2 details</div>
+            </div>
+          </div>
+          <Field label="Class Code"><Input value={scode} onChange={e=>setScode(e.target.value.toUpperCase())} placeholder="e.g. ABC123" autoFocus/></Field>
+          <Field label="Your Full Name (exact)"><Input value={sname} onChange={e=>setSname(e.target.value)} placeholder="Enter your name" onKeyDown={e=>e.key==="Enter"&&sCheck()}/></Field>
+          <Err msg={serr}/>
+          <div style={{marginTop:"1rem"}}><Btn onClick={sCheck} full disabled={busyS}>{busyS?"Checking…":"Check Attendance →"}</Btn></div>
+
+          {sres&&<div style={{marginTop:"1rem"}} className="anim-fadeup">
+            <div style={{background:sres.g?.bg||"rgba(91,155,213,0.08)",border:`1px solid ${sres.g?.b||"rgba(91,155,213,0.22)"}`,borderRadius:13,padding:"1rem",textAlign:"center",marginBottom:"0.75rem"}}>
+              <div style={{fontSize:"0.76rem",color:MUTED,marginBottom:2}}>{sres.cls.name}</div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",marginBottom:"0.5rem"}}>{sres.stu.name}</div>
+              {sres.p!==null?<>
+                <div style={{fontSize:"2.5rem",fontWeight:800,fontFamily:"'Syne',sans-serif",color:sres.g?.c}}>{sres.p}%</div>
+                <div style={{display:"inline-block",background:sres.g?.bg,border:`1px solid ${sres.g?.b}`,borderRadius:7,padding:"2px 12px",color:sres.g?.c,fontWeight:700,fontSize:"0.81rem",marginTop:"0.3rem"}}>{sres.g?.t}</div>
+              </>:<div style={{color:DIM,fontSize:"0.84rem"}}>No data yet</div>}
+            </div>
+            <div style={{display:"flex",gap:"0.5rem",marginBottom:"0.7rem"}}>
+              {[{v:sres.presD.length,l:"Present",c:"#56c47a",bg:"rgba(86,196,122,0.1)",b:"rgba(86,196,122,0.22)"},{v:sres.allD.length-sres.presD.length,l:"Absent",c:"#e85555",bg:"rgba(232,85,85,0.1)",b:"rgba(232,85,85,0.22)"},{v:sres.allD.length,l:"Total",c:P,bg:"rgba(91,155,213,0.1)",b:"rgba(91,155,213,0.22)"}].map(x=><div key={x.l} style={{background:x.bg,border:`1px solid ${x.b}`,borderRadius:8,padding:"6px 8px",textAlign:"center",flex:1}}>
+                <div style={{fontSize:"1rem",fontWeight:700,color:x.c}}>{x.v}</div>
+                <div style={{fontSize:"0.67rem",color:MUTED}}>{x.l}</div>
+              </div>)}
+            </div>
+            {sres.allD.length>0&&<div style={{maxHeight:170,overflowY:"auto",display:"flex",flexDirection:"column",gap:"0.27rem"}}>
+              {sres.allD.map(d=>{const p2=sres.presD.includes(d);return<div key={d} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"rgba(255,255,255,0.025)",borderRadius:7}}>
+                <span style={{fontSize:"0.79rem",color:MUTED}}>{d}</span>
+                <span style={{fontSize:"0.75rem",fontWeight:600,color:p2?"#56c47a":"#e85555"}}>{p2?"✅ Present":"❌ Absent"}</span>
+              </div>;})}
+            </div>}
+          </div>}
+        </Card>}
+        <Credit/>
+      </div>
+    </div>
+  </Page>;
+  }
+
+  /* ════════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════════ */
+function Dashboard({teacher,onOpenClass,onLogout,onHome}){
+  const [cls,setCls]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [loadErr,setLoadErr]=useState("");
+  const [showF,setShowF]=useState(false);
+  const [nm,setNm]=useState("");
+  const [err,setErr]=useState("");
+  const [busy,setBusy]=useState(false);
+
+  async function refresh(){
+    setLoading(true);setLoadErr("");
+    try{
+      const u=await fbGetClassesForTeacher(teacher.id);
+      setCls(u);
+    }catch(e){
+      setLoadErr("Could not load your classes. Check your internet and refresh.");
+    }
+    setLoading(false);
+  }
+  useEffect(()=>{refresh();},[teacher.id]);
+
+  async function create(){
+    setErr("");
+    if(!nm.trim())return setErr("Enter a class name.");
+    setBusy(true);
+    try{
+      const c={id:uid(),teacherId:teacher.id.toLowerCase(),name:nm.trim(),code:code6(),students:[],att:{},hols:[]};
+      await fbSaveClass(c);
+      setCls(prev=>[...prev,c]);setNm("");setShowF(false);
+    }catch(e){
+      setErr("Could not create class. Check your internet and try again.");
+    }
+    setBusy(false);
+  }
+  async function del(cid){
+    if(!window.confirm("Delete this class? All data will be lost."))return;
+    try{
+      await fbDeleteClass(cid);
+      setCls(prev=>prev.filter(c=>c.id!==cid));
+    }catch(e){
+      window.alert("Could not delete class. Check your internet and try again.");
+    }
+  }
+
+  return <Page>
+    <Topbar onHome={onHome} right={<>
+      <span style={{fontSize:"0.81rem",color:MUTED}}>👤 {teacher.name}</span>
+      <button onClick={onLogout} style={{background:"rgba(232,85,85,0.08)",border:"1px solid rgba(232,85,85,0.2)",borderRadius:8,padding:"5px 12px",color:"#e85555",fontSize:"0.79rem",cursor:"pointer"}}>Logout</button>
+    </>}/>
+    <div style={{maxWidth:980,margin:"0 auto",padding:"1.8rem 1.2rem"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1.5rem",flexWrap:"wrap",gap:"0.75rem"}}>
+        <div>
+          <h1 style={{fontFamily:"'Syne',sans-serif",fontSize:"1.5rem",fontWeight:800}}>My Classes</h1>
+          <p style={{color:MUTED,fontSize:"0.81rem",marginTop:2}}>{cls.length} class{cls.length!==1?"es":""} · tap to open</p>
+        </div>
+        <Btn onClick={()=>{setShowF(true);setErr("");setNm("");}}>+ New Class</Btn>
+      </div>
+
+      {showF&&<Card style={{marginBottom:"1.1rem",borderColor:"rgba(91,155,213,0.28)"}}>
+        <Label text="Class Name"/>
+        <div style={{display:"flex",gap:"0.55rem",flexWrap:"wrap",marginTop:6}}>
+          <div style={{flex:1,minWidth:180}}><Input value={nm} onChange={e=>setNm(e.target.value)} placeholder="e.g. BSc CS 3rd Year" onKeyDown={e=>e.key==="Enter"&&create()} autoFocus/></div>
+          <Btn onClick={create} disabled={busy}>{busy?"Creating…":"Create"}</Btn>
+          <Btn onClick={()=>setShowF(false)} ghost>Cancel</Btn>
+        </div>
+        <Err msg={err}/>
+      </Card>}
+
+      {loading?<div style={{textAlign:"center",padding:"4rem 2rem",color:DIM}}>Loading your classes…</div>:
+      loadErr?<div style={{textAlign:"center",padding:"2rem"}}><Err msg={loadErr}/><div style={{marginTop:"0.8rem"}}><Btn onClick={refresh} ghost sm>Retry</Btn></div></div>:
+      cls.length===0?<div style={{textAlign:"center",padding:"5rem 2rem",color:DIM}}>
+        <div style={{fontSize:"3.5rem",marginBottom:"0.75rem"}}>📚</div>
+        <p style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"1rem",color:MUTED,marginBottom:"0.4rem"}}>No classes yet</p>
+        <p style={{fontSize:"0.82rem"}}>Click "+ New Class" to get started</p>
+      </div>:
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))",gap:"1rem"}}>
+        {cls.map(c=>{
+          const hset=new Set(c.hols||[]);
+          const days=Object.keys(c.att||{}).filter(d=>!hset.has(d)).length;
+          return <div key={c.id} onClick={()=>onOpenClass(c.id)} className="card-hover" style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,padding:"1.3rem",cursor:"pointer",position:"relative"}}>
+            <button onClick={e=>{e.stopPropagation();del(c.id);}} style={{position:"absolute",top:10,right:10,background:"transparent",border:"none",cursor:"pointer",color:"rgba(232,85,85,0.4)",fontSize:"0.95rem",padding:4,borderRadius:6,transition:"color 0.2s"}} onMouseEnter={e=>e.currentTarget.style.color="#e85555"} onMouseLeave={e=>e.currentTarget.style.color="rgba(232,85,85,0.4)"}>🗑</button>
+            <h3 style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"1rem",marginBottom:"0.45rem",paddingRight:"1.5rem"}}>{c.name}</h3>
+            <div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(91,155,213,0.09)",border:"1px solid rgba(91,155,213,0.18)",borderRadius:6,padding:"2px 10px",marginBottom:"0.7rem"}}>
+              <span style={{fontSize:"0.68rem",color:"rgba(91,155,213,0.6)",letterSpacing:"0.08em"}}>CODE</span>
+              <span style={{fontSize:"0.82rem",fontWeight:700,color:P,letterSpacing:"0.1em"}}>{c.code}</span>
+            </div>
+            <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
+              <span style={{background:"rgba(255,255,255,0.04)",borderRadius:7,padding:"3px 10px",fontSize:"0.78rem",color:MUTED}}>👥 {c.students.length}</span>
+              <span style={{background:"rgba(255,255,255,0.04)",borderRadius:7,padding:"3px 10px",fontSize:"0.78rem",color:MUTED}}>📅 {days} days</span>
+            </div>
+          </div>;
+        })}
+      </div>}
+    </div>
+  </Page>;
+}
+
+/* ════════════════════════════════════════════
+   CLASS PAGE
+════════════════════════════════════════════ */
+function ClassPage({classId,onBack}){
+  // Class data (from Firestore)
+  const [cls,setCls]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [loadErr,setLoadErr]=useState("");
+  const [otherCls,setOtherCls]=useState([]); // sibling classes (same teacher) for Move feature
+  const [tab,setTab]=useState("students");
+  const [tick,setTick]=useState(0);
+
+  // Students
+  const [ns,setNs]=useState("");
+  const [se,setSe]=useState("");
+  const [sok,setSok]=useState("");
+  const [mid,setMid]=useState(null);
+
+  // Attendance
+  const [date,setDate]=useState(today());
+  const [tmp,setTmp]=useState({});
+  const [saved,setSaved]=useState(false);
+
+  async function loadClass(){
+    setLoading(true);setLoadErr("");
+    try{
+      const c=await fbGetClass(classId);
+      if(!c){setLoadErr("Class not found.");setLoading(false);return;}
+      setCls(c);
+      const sibs=await fbGetClassesForTeacher(c.teacherId);
+      setOtherCls(sibs.filter(s=>s.id!==classId).map(s=>({id:s.id,name:s.name})));
+    }catch(e){
+      setLoadErr("Could not load this class. Check your internet and try again.");
+    }
+    setLoading(false);
+  }
+  useEffect(()=>{loadClass();},[classId]);
+
+  useEffect(()=>{
+    if(!cls)return;
+    setTmp({...((cls.att||{})[date]||{})});setSaved(false);
+  },[date,classId,tick,cls&&cls.id]);
+
+  // Persist a patch to the current class — updates UI instantly, syncs to Firestore in background
+  async function save(patch){
+    const next={...cls,...patch};
+    setCls(next);setTick(t=>t+1);
+    try{
+      await fbSaveClass(next);
+    }catch(e){
+      window.alert("⚠️ Could not sync to the cloud — check your internet. Your last change may not be saved on other devices.");
+    }
+  }
+
+  function addStu(){
+    setSe("");setSok("");
+    const n=ns.trim();
+    if(!n)return setSe("Enter student name.");
+    if(cls.students.find(s=>s.name.toLowerCase()===n.toLowerCase()))return setSe("Student already exists.");
+    save({students:[...cls.students,{id:uid(),name:n}]});
+    setNs("");setSok(`${n} added!`);setTimeout(()=>setSok(""),2500);
+  }
+  function remStu(sid){
+    if(!window.confirm("Remove this student?"))return;
+    const students=cls.students.filter(s=>s.id!==sid);
+    const att={...cls.att};
+    Object.keys(att).forEach(d=>{if(att[d]){att[d]={...att[d]};delete att[d][sid];}});
+    save({students,att});
+  }
+  async function moveStu(sid,tid){
+    const stu=cls.students.find(s=>s.id===sid);
+    if(!stu)return;
+    setMid(null);
+    const updatedSource={...cls,students:cls.students.filter(s=>s.id!==sid)};
+    setCls(updatedSource);
+    try{
+      const target=await fbGetClass(tid);
+      if(!target)throw new Error("Target class not found");
+      const updatedTarget={...target,students:[...target.students,stu]};
+      await fbSaveClass(updatedSource);
+      await fbSaveClass(updatedTarget);
+    }catch(e){
+      window.alert("Could not move the student. Check your internet and try again.");
+      loadClass();
+    }
+  }
+
+  const isHol=cls?(cls.hols||[]).includes(date):false;
+  function togHol(){const h=cls.hols||[];save({hols:isHol?h.filter(d=>d!==date):[...h,date]});}
+  function saveAtt(){save({att:{...(cls.att||{}),[date]:{...tmp}}});setSaved(true);setTimeout(()=>setSaved(false),2200);}
+  const pCnt=Object.values(tmp).filter(Boolean).length;
+
+  const TABS=[{k:"students",l:"👥 Students"},{k:"attendance",l:"✅ Attendance"},{k:"summary",l:"📊 Summary"},{k:"datesearch",l:"📅 Date Search"}];
+
+  if(loading)return <Page><Topbar onHome={onBack} right={<Btn onClick={onBack} ghost sm>← Back</Btn>}/><div style={{padding:"4rem 2rem",textAlign:"center",color:DIM}}>Loading class…</div></Page>;
+  if(loadErr)return <Page><Topbar onHome={onBack} right={<Btn onClick={onBack} ghost sm>← Back</Btn>}/><div style={{padding:"3rem 2rem",textAlign:"center"}}><Err msg={loadErr}/><div style={{marginTop:"0.9rem"}}><Btn onClick={loadClass} ghost sm>Retry</Btn></div></div></Page>;
+  if(!cls)return <Page><Topbar onHome={onBack} right={<Btn onClick={onBack} ghost sm>← Back</Btn>}/><div style={{padding:"2rem",color:MUTED}}>Class not found.</div></Page>;
+
+  return <Page>
+    <Topbar onHome={onBack} right={
+      <div style={{display:"flex",alignItems:"center",gap:9}}>
+        <div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.93rem"}}>{cls.name}</div>
+          <div style={{fontSize:"0.69rem",color:"rgba(91,155,213,0.65)",letterSpacing:"0.08em"}}>CODE: {cls.code}</div>
+        </div>
+        <button onClick={onBack} style={{background:"rgba(91,155,213,0.08)",border:`1px solid rgba(91,155,213,0.22)`,borderRadius:8,padding:"5px 12px",color:P,fontSize:"0.81rem",cursor:"pointer"}}>← Back</button>
+      </div>
+    }/>
+
+    <div style={{display:"flex",gap:"0.4rem",padding:"1.1rem 1.2rem 0",maxWidth:900,margin:"0 auto",flexWrap:"wrap"}}>
+      {TABS.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"7px 14px",borderRadius:9,fontSize:"0.83rem",fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all 0.18s",background:tab===t.k?GRAD:"rgba(255,255,255,0.04)",border:tab===t.k?"none":`1px solid ${BORDER}`,color:tab===t.k?"#07070f":"rgba(232,234,240,0.48)",boxShadow:tab===t.k?`0 0 14px rgba(91,155,213,0.22)`:"none"}}>{t.l}</button>)}
+    </div>
+
+    <div style={{maxWidth:900,margin:"0 auto",padding:"1.1rem 1.2rem"}}>
+
+      {/* STUDENTS */}
+      {tab==="students"&&<div className="anim-fadeup">
+        <Card style={{marginBottom:"1rem"}}>
+          <Label text="Add New Student"/>
+          <div style={{display:"flex",gap:"0.55rem",flexWrap:"wrap",marginTop:6}}>
+            <div style={{flex:1,minWidth:180}}><Input value={ns} onChange={e=>setNs(e.target.value)} placeholder="Student full name" onKeyDown={e=>e.key==="Enter"&&addStu()} autoFocus/></div>
+            <Btn onClick={addStu}>Add</Btn>
+          </div>
+          <Err msg={se}/><Ok msg={sok}/>
+        </Card>
+        {cls.students.length===0?<div style={{textAlign:"center",padding:"2.5rem",color:DIM}}><div style={{fontSize:"2.5rem",marginBottom:"0.5rem"}}>👤</div><p>No students yet. Add above!</p></div>:
+        <Card>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.93rem",marginBottom:"0.85rem"}}>Students ({cls.students.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:"0.42rem"}}>
+            {cls.students.map((s,i)=>{
+              const p=pct(s.id,cls.att,cls.hols);
+              const g=grade(p);
+              return <div key={s.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:`1px solid ${BORDER}`,flexWrap:"wrap",gap:7}}>
+                <div style={{display:"flex",alignItems:"center",gap:9}}>
+                  <span style={{width:25,height:25,borderRadius:"50%",background:"rgba(91,155,213,0.11)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.72rem",fontWeight:700,color:P,flexShrink:0}}>{i+1}</span>
+                  <span style={{fontWeight:500,fontSize:"0.9rem"}}>{s.name}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  {g?<span style={{background:g.bg,border:`1px solid ${g.b}`,borderRadius:6,padding:"2px 9px",fontSize:"0.77rem",fontWeight:600,color:g.c}}>{p}%</span>:<span style={{fontSize:"0.74rem",color:DIM}}>No data</span>}
+                  {otherCls.length>0&&<button onClick={()=>setMid(s.id)} style={{background:"rgba(91,155,213,0.08)",border:`1px solid rgba(91,155,213,0.2)`,borderRadius:7,padding:"3px 9px",color:P,fontSize:"0.74rem",cursor:"pointer"}}>Move</button>}
+                  <button onClick={()=>remStu(s.id)} style={{background:"transparent",border:"none",cursor:"pointer",color:"rgba(232,85,85,0.5)",fontSize:"0.85rem",padding:"2px 5px",borderRadius:6,transition:"color 0.2s"}} onMouseEnter={e=>e.currentTarget.style.color="#e85555"} onMouseLeave={e=>e.currentTarget.style.color="rgba(232,85,85,0.5)"}>✕</button>
+                </div>
+              </div>;
+            })}
+          </div>
+        </Card>}
+      </div>}
+
+      {/* ATTENDANCE */}
+      {tab==="attendance"&&<div className="anim-fadeup">
+        <Card style={{marginBottom:"1rem"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"0.75rem"}}>
+            <div>
+              <Label text="Date"/>
+              <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{background:"rgba(255,255,255,0.055)",border:`1px solid rgba(91,155,213,0.22)`,borderRadius:9,padding:"8px 12px",color:TEXT,fontSize:"0.9rem",outline:"none"}}/>
+            </div>
+            <button onClick={togHol} style={{background:isHol?"rgba(240,192,64,0.12)":"rgba(255,255,255,0.04)",border:`1px solid ${isHol?"rgba(240,192,64,0.38)":"rgba(91,155,213,0.18)"}`,borderRadius:9,padding:"8px 14px",color:isHol?"#f0c040":MUTED,fontWeight:600,fontSize:"0.84rem",cursor:"pointer",transition:"all 0.2s"}}>
+              {isHol?"🏖️ Holiday (tap to remove)":"🏖️ Mark Holiday"}
+            </button>
+          </div>
+          {isHol&&<div style={{marginTop:"0.7rem",background:"rgba(240,192,64,0.08)",border:"1px solid rgba(240,192,64,0.22)",borderRadius:9,padding:"8px 12px",color:"#f0c040",fontSize:"0.82rem"}}>Holiday — not counted in attendance %</div>}
+        </Card>
+
+        {!isHol&&cls.students.length===0&&<div style={{textAlign:"center",padding:"2rem",color:DIM,fontSize:"0.87rem"}}>Add students first from the Students tab.</div>}
+
+        {!isHol&&cls.students.length>0&&<>
+          <div style={{display:"flex",gap:"0.5rem",marginBottom:"0.75rem",flexWrap:"wrap",alignItems:"center"}}>
+            <button onClick={()=>{const a={};cls.students.forEach(s=>a[s.id]=true);setTmp(a);}} style={{background:"rgba(86,196,122,0.1)",border:"1px solid rgba(86,196,122,0.26)",borderRadius:8,padding:"6px 13px",color:"#56c47a",fontSize:"0.81rem",fontWeight:600,cursor:"pointer"}}>✅ All Present</button>
+            <button onClick={()=>setTmp({})} style={{background:"rgba(232,85,85,0.1)",border:"1px solid rgba(232,85,85,0.26)",borderRadius:8,padding:"6px 13px",color:"#e85555",fontSize:"0.81rem",fontWeight:600,cursor:"pointer"}}>❌ All Absent</button>
+            <div style={{marginLeft:"auto",display:"flex",gap:10,fontSize:"0.82rem"}}>
+              <span style={{color:"#56c47a"}}>✅ {pCnt}</span>
+              <span style={{color:"#e85555"}}>❌ {cls.students.length-pCnt}</span>
+            </div>
+          </div>
+          <Card style={{marginBottom:"1rem"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:"0.38rem"}}>
+              {cls.students.map((s,i)=>{
+                const isP=tmp[s.id]===true;
+                const p=pct(s.id,cls.att,cls.hols);
+                const g=grade(p);
+                return <div key={s.id} onClick={()=>setTmp(prev=>({...prev,[s.id]:!prev[s.id]}))}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isP?"rgba(86,196,122,0.07)":"rgba(255,255,255,0.02)",border:`1px solid ${isP?"rgba(86,196,122,0.22)":"rgba(91,155,213,0.07)"}`,borderRadius:10,cursor:"pointer",userSelect:"none",transition:"all 0.13s"}}>
+                  <div style={{width:20,height:20,borderRadius:6,border:`2px solid ${isP?"#56c47a":"rgba(232,234,240,0.18)"}`,background:isP?"#56c47a":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.13s"}}>
+                    {isP&&<span style={{color:"#07070f",fontSize:11,fontWeight:900}}>✓</span>}
+                  </div>
+                  <span style={{fontSize:"0.73rem",color:DIM,width:18,flexShrink:0}}>{i+1}</span>
+                  <span style={{flex:1,fontWeight:500,fontSize:"0.9rem",color:isP?TEXT:"rgba(232,234,240,0.48)"}}>{s.name}</span>
+                  {g&&<span style={{fontSize:"0.75rem",fontWeight:700,color:g.c,background:g.bg,border:`1px solid ${g.b}`,borderRadius:6,padding:"2px 8px",flexShrink:0}}>{p}%</span>}
+                  <span style={{fontSize:"0.78rem",fontWeight:600,color:isP?"#56c47a":"#e85555",flexShrink:0,minWidth:50,textAlign:"right"}}>{isP?"Present":"Absent"}</span>
+                </div>;
+              })}
+            </div>
+          </Card>
+          <Btn onClick={saveAtt} full>{saved?"✅ Saved!":"Save Attendance"}</Btn>
+        </>}
+      </div>}
+
+      
+      {/* SUMMARY */}
+      {tab==="summary"&&<div className="anim-fadeup">
+        {cls.students.length===0?<div style={{textAlign:"center",padding:"2.5rem",color:DIM}}>No students yet.</div>:
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:"0.7rem"}}>
+          {cls.students.map((s,i)=>{
+            const p=pct(s.id,cls.att,cls.hols);
+            const g=grade(p);
+            const hset=new Set(cls.hols||[]);
+            const days=Object.keys(cls.att||{}).filter(d=>!hset.has(d));
+            const pD=days.filter(d=>(cls.att[d]||{})[s.id]);
+            return <div key={s.id} style={{background:g?g.bg:CARD,border:`1px solid ${g?g.b:BORDER}`,borderRadius:12,padding:"1rem"}}>
+              <div style={{fontSize:"0.68rem",color:DIM,marginBottom:3}}>#{i+1}</div>
+              <div style={{fontWeight:600,fontSize:"0.88rem",marginBottom:5,wordBreak:"break-word"}}>{s.name}</div>
+              {g?<>
+                <div style={{fontSize:"1.5rem",fontWeight:800,fontFamily:"'Syne',sans-serif",color:g.c}}>{p}%</div>
+                <div style={{fontSize:"0.72rem",color:g.c,fontWeight:600,marginTop:1}}>{g.t}</div>
+                <div style={{fontSize:"0.7rem",color:DIM,marginTop:4}}>{pD.length}/{days.length} days</div>
+              </>:<div style={{fontSize:"0.78rem",color:DIM}}>No data</div>}
+            </div>;
+          })}
+        </div>}
+      </div>}
+
+      {/* DATE SEARCH */}
+      {tab==="datesearch"&&<div className="anim-fadeup">
+        <Card style={{marginBottom:"1rem"}}>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.95rem",marginBottom:"0.85rem"}}>🔍 Search by Date</div>
+          <Label text="Select Date"/>
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{background:"rgba(255,255,255,0.055)",border:`1px solid rgba(91,155,213,0.22)`,borderRadius:9,padding:"8px 12px",color:TEXT,fontSize:"0.9rem",outline:"none",marginTop:6}}/>
+        </Card>
+
+        {(cls.hols||[]).includes(date)?
+          <Card><div style={{background:"rgba(240,192,64,0.08)",border:"1px solid rgba(240,192,64,0.22)",borderRadius:9,padding:"10px 14px",color:"#f0c040",fontSize:"0.85rem"}}>🏖️ This date is marked as a Holiday.</div></Card>
+        :(cls.att||{})[date]?
+          <Card>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.85rem",flexWrap:"wrap",gap:"0.5rem"}}>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.93rem"}}>Attendance — {date}</div>
+              <div style={{display:"flex",gap:8,fontSize:"0.8rem"}}>
+                <span style={{color:"#56c47a"}}>✅ {cls.students.filter(s=>(cls.att[date]||{})[s.id]).length} Present</span>
+                <span style={{color:"#e85555"}}>❌ {cls.students.filter(s=>!(cls.att[date]||{})[s.id]).length} Absent</span>
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:"0.38rem"}}>
+              {cls.students.map((s,i)=>{
+                const isP=(cls.att[date]||{})[s.id]===true;
+                return <div key={s.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:isP?"rgba(86,196,122,0.06)":"rgba(255,255,255,0.02)",border:`1px solid ${isP?"rgba(86,196,122,0.2)":BORDER}`,borderRadius:9}}>
+                  <div style={{display:"flex",alignItems:"center",gap:9}}>
+                    <span style={{width:24,height:24,borderRadius:"50%",background:"rgba(91,155,213,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",fontWeight:700,color:P,flexShrink:0}}>{i+1}</span>
+                    <span style={{fontWeight:500,fontSize:"0.9rem"}}>{s.name}</span>
+                  </div>
+                  <span style={{fontSize:"0.79rem",fontWeight:600,color:isP?"#56c47a":"#e85555"}}>{isP?"✅ Present":"❌ Absent"}</span>
+                </div>;
+              })}
+            </div>
+          </Card>
+        :<Card><div style={{textAlign:"center",padding:"1.5rem",color:DIM,fontSize:"0.87rem"}}>No attendance recorded for this date.<br/>Select a different date or take attendance first.</div></Card>}
+      </div>}
+    </div>
+
+    {/* MOVE MODAL */}
+    {mid&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"1.5rem"}} onClick={()=>setMid(null)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#111120",border:`1px solid rgba(91,155,213,0.28)`,borderRadius:16,padding:"1.4rem",width:"100%",maxWidth:340}}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"1rem",marginBottom:"0.4rem"}}>Move Student</div>
+        <p style={{color:MUTED,fontSize:"0.83rem",marginBottom:"1rem"}}>Move <b style={{color:TEXT}}>{cls.students.find(s=>s.id===mid)?.name}</b> to:</p>
+        <div style={{display:"flex",flexDirection:"column",gap:"0.45rem",marginBottom:"0.85rem"}}>
+          {otherCls.map(c=><button key={c.id} onClick={()=>moveStu(mid,c.id)} style={{padding:"10px 13px",background:"rgba(91,155,213,0.07)",border:`1px solid rgba(91,155,213,0.18)`,borderRadius:9,color:TEXT,fontSize:"0.88rem",cursor:"pointer",textAlign:"left",transition:"all 0.18s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(91,155,213,0.14)";e.currentTarget.style.color=P}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(91,155,213,0.07)";e.currentTarget.style.color=TEXT}}>{c.name}</button>)}
+        </div>
+        <Btn onClick={()=>setMid(null)} ghost full>Cancel</Btn>
+      </div>
+    </div>}
+  </Page>;
+}
+
+/* ════════════════════════════════════════════
+   APP ROOT
+════════════════════════════════════════════ */
+function App(){
+  const [page,setPage]=useState("landing");
+  const [teacher,setTeacher]=useState(null);
+  const [openCls,setOpenCls]=useState(null);
+  useEffect(()=>{const t=getSession();if(t)setTeacher(t);},[]);
+
+  if(page==="landing") return <Landing goSetup={()=>setPage("setup")} goLogin={()=>setPage("login")} goStudent={()=>setPage("student")}/>;
+  if(page==="setup")   return <Setup onDone={t=>{setTeacher(t);setPage("dashboard");}} onBack={()=>setPage("landing")}/>;
+  if(page==="login")   return <LoginPage startTab="teacher" onLogin={t=>{setTeacher(t);setPage("dashboard");}} onBack={()=>setPage("landing")} onSetup={()=>setPage("setup")}/>;
+  if(page==="student") return <LoginPage startTab="student" onLogin={t=>{setTeacher(t);setPage("dashboard");}} onBack={()=>setPage("landing")} onSetup={()=>setPage("setup")}/>;
+  if(page==="dashboard") return <Dashboard teacher={teacher} onOpenClass={id=>{setOpenCls(id);setPage("class");}} onLogout={()=>{clearSession();setTeacher(null);setPage("landing");}} onHome={()=>setPage("landing")}/>;
+  if(page==="class")   return <ClassPage classId={openCls} onBack={()=>setPage("dashboard")}/>;
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
